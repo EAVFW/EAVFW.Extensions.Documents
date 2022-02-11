@@ -1,0 +1,145 @@
+﻿using DotNetDevOps.Extensions.EAVFramework;
+using DotNetDevOps.Extensions.EAVFramework.Endpoints;
+using DotNetDevOps.Extensions.EAVFramework.Extensions;
+using DotNetDevOps.Extensions.EAVFramework.Shared;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Routing;
+using Microsoft.Extensions.DependencyInjection;
+using System;
+using System.IO;
+using System.IO.Compression;
+using System.Security.Claims;
+using System.Linq;
+using DotNetDevOps.Extensions.EAVFramework.Plugins;
+using System.Threading.Tasks;
+using Microsoft.AspNetCore.StaticFiles;
+using DotNetDevOps.Extensions.EAVFramework.Configuration;
+
+namespace EAVFW.Extensions.Documents
+{
+
+   
+    public class SetDocumentNameOnCreate<TContext, TDocument> : IPlugin<TContext, TDocument>
+         where TContext : DynamicContext
+         where TDocument : DynamicEntity, IDocumentEntity
+    {
+        
+        
+
+        public async Task Execute(PluginContext<TContext, TDocument> context)
+        {
+
+            if (!string.IsNullOrEmpty(context.Input.Path))
+                context.Input.Name ??= Path.GetFileName(context.Input.Path);
+
+
+
+        }
+    }
+
+   
+    public class SetDocumentContentTypeOnCreate<TContext, TDocument> : IPlugin<TContext, TDocument>
+         where TContext : DynamicContext
+         where TDocument : DynamicEntity, IDocumentEntity
+    {
+        private static readonly FileExtensionContentTypeProvider ContentTypeProvider = new FileExtensionContentTypeProvider();
+
+       
+
+        public async Task Execute(PluginContext<TContext, TDocument> context)
+        {
+
+
+            if (!string.IsNullOrEmpty(context.Input.Name) && ContentTypeProvider.TryGetContentType(context.Input.Name, out var contentType))
+                context.Input.ContentType ??= contentType;
+
+
+
+        }
+    }
+
+
+    public static class DocumentExtensions
+    {
+        public static IEAVFrameworkBuilder AddDocumentPlugins<TContext,TDocument>(this IEAVFrameworkBuilder builder)
+             where TContext : DynamicContext
+            where TDocument : DynamicEntity, IDocumentEntity
+        {
+            builder.AddPlugin<SetDocumentNameOnCreate<TContext, TDocument>, TContext, TDocument>(EntityPluginExecution.PreValidate, EntityPluginOperation.Create, 0, EntityPluginMode.Sync);
+            builder.AddPlugin<SetDocumentContentTypeOnCreate<TContext, TDocument>, TContext, TDocument>(EntityPluginExecution.PreValidate, EntityPluginOperation.Create, 1, EntityPluginMode.Sync);
+
+            builder.AddPlugin<SetDocumentNameOnCreate<TContext, TDocument>, TContext, TDocument>(EntityPluginExecution.PreValidate, EntityPluginOperation.Update, 0, EntityPluginMode.Sync);
+            builder.AddPlugin<SetDocumentContentTypeOnCreate<TContext, TDocument>, TContext, TDocument>(EntityPluginExecution.PreValidate, EntityPluginOperation.Update, 1, EntityPluginMode.Sync);
+
+
+            return builder;
+        }
+        public static IEndpointRouteBuilder MapDocumentsApiEndpoints<TContext, TDocument>(this IEndpointRouteBuilder routes)
+            where TContext : DynamicContext
+            where TDocument : DynamicEntity, IDocumentEntity,new()
+        {
+
+            routes.MapPost("/api/containers/{containerName}/{files}/{**filename}", async r =>
+            {
+                var auth = await r.AuthenticateAsync("EasyAuth");
+              //  var identity = Guid.Parse(auth.Principal.FindFirstValue("sub"));
+
+                var context = r.RequestServices.GetRequiredService<EAVDBContext<TContext>>();
+                var files = context.Set<TDocument>();
+                var containerName = r.GetRouteValue("containerName") as string;
+                var filename = r.GetRouteValue("filename")?.ToString()?.Trim('/');
+
+                MemoryStream ms = new MemoryStream();
+                await r.Request.BodyReader.AsStream().CopyToAsync(ms);
+
+                var entry = await files.AddAsync(new TDocument
+                {
+                    Container = containerName,
+                    Path = $"/{filename}",
+                    Name = Path.GetFileName(filename),
+                    Data = ms.ToArray(),
+                    //ModifiedById = identity,
+                    //CreatedById = identity,
+                    //OwnerId = identity,
+                    //CreatedOn = DateTime.UtcNow,
+                    //ModifiedOn = DateTime.UtcNow
+                });
+                await context.SaveChangesAsync(auth.Principal);
+
+                await r.Response.WriteJsonAsync(new { id = entry.CurrentValues.GetValue<Guid>("Id") });
+            });
+
+
+            routes.MapGet("/api/files/{fileid}", async r =>
+            {
+                var gzip = r.Request.Headers.TryGetValue("Accept-Encoding", out var compressionSupported) && compressionSupported.Contains("gzip", StringComparer.OrdinalIgnoreCase);
+
+                var context = r.RequestServices.GetRequiredService<DynamicContext>();
+                var files = context.Set<TDocument>();
+                var fileId = Guid.Parse(r.GetRouteValue("fileid") as string);
+                var file = await files.FindAsync(fileId);
+                byte[] data = file.Data;
+
+                if (file.Compressed??false && !gzip)
+                {
+                    using var ms = new MemoryStream(file.Data);
+                    using var tinyStream = new GZipStream(ms, CompressionMode.Decompress);
+                    using var msout = new MemoryStream();
+                    await tinyStream.CopyToAsync(msout);
+                    data = msout.ToArray();
+                    gzip = false;
+                }
+
+                if (gzip)
+                {
+                    r.Response.Headers.Add("content-encoding", "gzip");
+                }
+                r.Response.Headers.Add("content-type", file.ContentType ?? "application/octet-stream");
+                await r.Response.BodyWriter.WriteAsync(data);
+            });
+
+            return routes;
+        }
+    }
+}

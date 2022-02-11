@@ -1,0 +1,48 @@
+{
+	"entities": {
+		"Document": {
+			"pluralName": "Documents",
+			"locale": {
+				"1030": {
+					"pluralName": "Dokumenter",
+					"displayName": "Dokument"
+				}
+			},
+			"sitemap": "[variables('sitemaps').Administration]",
+			"attributes": {
+				"[merge()]": "[variables('audit')]",
+				"Name": {
+					"isPrimaryField": true,
+					"locale": "[variables('translations')[propertyName(attribute())]]"
+				},
+				"Size": {
+					"type": "integer"
+				},
+				"Container": {
+					"type": {
+						"type": "Text",
+						"maxLength": 100
+					}
+				},
+				"Path": {
+					"type": {
+						"type": "Text",
+						"maxLength": 512
+					}
+				},
+				"ContentType": {
+					"type": "Text"
+				},
+				"Compressed": {
+					"type": "boolean"
+				},
+				"Data": {
+					"type": {
+						"type": "binary",
+						"format": "File"
+					}
+				}
+			}
+		}
+	}
+}
