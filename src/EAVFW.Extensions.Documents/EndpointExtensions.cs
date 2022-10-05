@@ -1,7 +1,7 @@
-﻿using DotNetDevOps.Extensions.EAVFramework;
-using DotNetDevOps.Extensions.EAVFramework.Endpoints;
-using DotNetDevOps.Extensions.EAVFramework.Extensions;
-using DotNetDevOps.Extensions.EAVFramework.Shared;
+﻿using EAVFramework;
+using EAVFramework.Endpoints;
+using EAVFramework.Extensions;
+using EAVFramework.Shared;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Routing;
@@ -11,10 +11,10 @@ using System.IO;
 using System.IO.Compression;
 using System.Security.Claims;
 using System.Linq;
-using DotNetDevOps.Extensions.EAVFramework.Plugins;
+using EAVFramework.Plugins;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.StaticFiles;
-using DotNetDevOps.Extensions.EAVFramework.Configuration;
+using EAVFramework.Configuration;
 
 namespace EAVFW.Extensions.Documents
 {
