@@ -9,7 +9,7 @@
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<RepositoryUrl>https://github.com/EAVFW/EAVFW.Extensions.Documents</RepositoryUrl>
 		<LocalEAVFrameworkPath>..\..\..\..\EAVFramework</LocalEAVFrameworkPath>
-		<RemoteEAVFramework>false</RemoteEAVFramework>
+		<RemoteEAVFramework>true</RemoteEAVFramework>
 	</PropertyGroup>
 	<ItemGroup>
 		<FrameworkReference Include="Microsoft.AspNetCore.App" />
@@ -27,6 +27,6 @@
 		<ProjectReference Include="$(LocalEAVFrameworkPath)\src\EAVFramework.csproj" />
 	</ItemGroup>
 	<ItemGroup Condition="$(RemoteEAVFramework) != 'false'">
-		<PackageReference Include="EAVFramework" Version="$(EAVFrameworkVersion)" />
+		<PackageReference Include="EAVFramework" Version="2.2.0-dev.4" />
 	</ItemGroup>
 </Project>
