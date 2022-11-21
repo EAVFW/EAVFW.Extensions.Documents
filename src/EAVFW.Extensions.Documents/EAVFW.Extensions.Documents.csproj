@@ -27,6 +27,6 @@
 		<ProjectReference Include="$(LocalEAVFrameworkPath)\src\EAVFramework.csproj" />
 	</ItemGroup>
 	<ItemGroup Condition="$(RemoteEAVFramework) != 'false'">
-		<PackageReference Include="EAVFramework" Version="2.2.0-dev.4" />
+		<PackageReference Include="EAVFramework" Version="2.2.0-dev.8" />
 	</ItemGroup>
 </Project>
