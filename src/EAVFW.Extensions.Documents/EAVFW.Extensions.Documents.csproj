@@ -1,14 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFrameworks>netcoreapp3.1;net5.0;net6.0</TargetFrameworks>
+		<TargetFrameworks>netcoreapp3.1;net6.0</TargetFrameworks>
 
 		<Title>EAVFW.Extensions.Documents</Title>
 		<Authors>Poul Kjeldager</Authors>
 		<Description>Documents Extension for EAVFW Application Building</Description>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
 		<RepositoryUrl>https://github.com/EAVFW/EAVFW.Extensions.Documents</RepositoryUrl>
-
+		<LocalEAVFrameworkPath>..\..\..\..\EAVFramework</LocalEAVFrameworkPath>
+		<RemoteEAVFramework>true</RemoteEAVFramework>
 	</PropertyGroup>
 	<ItemGroup>
 		<FrameworkReference Include="Microsoft.AspNetCore.App" />
@@ -19,7 +20,13 @@
 	</ItemGroup>
 
 	<ItemGroup>
-		<PackageReference Include="EAVFramework" Version="1.0.0" />
+		 
 	</ItemGroup>
 
+	<ItemGroup Condition="$(RemoteEAVFramework) == 'false'">
+		<ProjectReference Include="$(LocalEAVFrameworkPath)\src\EAVFramework.csproj" />
+	</ItemGroup>
+	<ItemGroup Condition="$(RemoteEAVFramework) != 'false'">
+		<PackageReference Include="EAVFramework" Version="2.2.0" />
+	</ItemGroup>
 </Project>
