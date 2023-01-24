@@ -41,6 +41,10 @@
 						"type": "binary",
 						"format": "File"
 					}
+				},
+				"Hash": {
+					"type": "Text",
+					"description": "Hash of uncompressed document data"
 				}
 			}
 		}
