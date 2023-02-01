@@ -12,4 +12,6 @@ namespace EAVFW.Extensions.Documents
         public bool? Compressed { get; set; }
         public string ContentType { get; set; }
     }
+
+    
 }
