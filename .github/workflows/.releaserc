@@ -13,10 +13,7 @@ plugins:
   - - "@semantic-release/github"
     - assets:
         - path: ../../artifacts/*.nupkg
-          label: Parser DLL
+          label: Nugets
 
   - - "@semantic-release/exec"
-    - publishCmd: "dotnet nuget push ..\\..\\artifacts\\*.nupkg --source https://nuget.pkg.github.com/eavfw/index.json --api-key ${process.env.GITHUB_TOKEN}"
-
-  - - "@semantic-release/exec"
-    - publishCmd: "dotnet nuget push ..\\..\\artifacts\\*.nupkg --source https://api.nuget.org/v3/index.json --api-key ${process.env.CI_NUGET_API_KEY}"
+    - publishCmd: "dotnet nuget push ..\\..\\artifacts\\*.nupkg --source https://api.nuget.org/v3/index.json --api-key ${process.env.CI_NUGET_API_KEY}  --skip-duplicate"
