@@ -1,10 +1,12 @@
-﻿using EAVFramework;
+using EAVFramework;
 using EAVFramework.Plugins;
 using System.Threading.Tasks;
 using Microsoft.Extensions.Logging;
 using System.Security.Cryptography;
 using System.Text;
 using System.Linq;
+using System.IO;
+using System.IO.Compression;
 
 namespace EAVFW.Extensions.Documents
 {
@@ -45,14 +47,19 @@ namespace EAVFW.Extensions.Documents
             }
             else
             {
-                _logger.LogInformation("[{PluginName}] Document compressed - decompressing",
-                    nameof(CalculateAndSetDocumentHash<TContext, TDocument>));
+                using (var ms = new MemoryStream(documentEntity.Data))
+                {
+                    using (var gz = new GZipStream(ms, CompressionMode.Decompress))
+                    {
+                        var md5Hash = MD5.Create().ComputeHash(gz);
 
-                var documentData = await DocumentHelpers.Decompress(documentEntity.Data);
-                var documentDataAsByteArr = Encoding.UTF8.GetBytes(documentData);
-                var md5Hash = MD5.Create().ComputeHash(documentDataAsByteArr);
+                        //  var documentData = await DocumentHelpers.Decompress(documentEntity.Data);
+                        // var documentDataAsByteArr = Encoding.UTF8.GetBytes(documentData);
+                        //   var md5Hash = MD5.Create().ComputeHash(documentDataAsByteArr);
 
-                documentEntity.Hash = string.Join("", md5Hash.Select(x => x.ToString("X1")));
+                        documentEntity.Hash = string.Join("", md5Hash.Select(x => x.ToString("X1")));
+                    }
+                }
             }
         }
     }

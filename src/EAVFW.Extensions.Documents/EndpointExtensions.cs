@@ -1,4 +1,4 @@
-﻿using EAVFramework;
+using EAVFramework;
 using EAVFramework.Endpoints;
 using EAVFramework.Extensions;
 using EAVFramework.Shared;
@@ -43,7 +43,7 @@ namespace EAVFW.Extensions.Documents
             builder.AddPlugin<SetDocumentNameOnCreate<TContext, TDocument>, TContext, TDocument>(EntityPluginExecution.PreValidate, EntityPluginOperation.Create, 0, EntityPluginMode.Sync);
             builder.AddPlugin<SetDocumentContentTypeOnCreate<TContext, TDocument>, TContext, TDocument>(EntityPluginExecution.PreValidate, EntityPluginOperation.Create, 1, EntityPluginMode.Sync);
 
-            builder.AddPlugin<CalculateAndSetDocumentHash<TContext, TDocument>, TContext, TDocument>(EntityPluginExecution.PreValidate, EntityPluginOperation.Create, 0, EntityPluginMode.Sync);
+            builder.AddPlugin<CalculateAndSetDocumentHash<TContext, TDocument>, TContext, TDocument>(EntityPluginExecution.PreValidate, EntityPluginOperation.Update, 0, EntityPluginMode.Sync);
             builder.AddPlugin<SetDocumentNameOnCreate<TContext, TDocument>, TContext, TDocument>(EntityPluginExecution.PreValidate, EntityPluginOperation.Update, 0, EntityPluginMode.Sync);
             builder.AddPlugin<SetDocumentContentTypeOnCreate<TContext, TDocument>, TContext, TDocument>(EntityPluginExecution.PreValidate, EntityPluginOperation.Update, 1, EntityPluginMode.Sync);
 
