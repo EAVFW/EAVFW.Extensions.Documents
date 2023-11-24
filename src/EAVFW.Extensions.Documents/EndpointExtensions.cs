@@ -15,6 +15,11 @@ using EAVFramework.Plugins;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.StaticFiles;
 using EAVFramework.Configuration;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.EntityFrameworkCore.ChangeTracking;
+using System.Collections.Generic;
+using EAVFramework.Endpoints.Results;
+using Microsoft.Net.Http.Headers;
 
 namespace EAVFW.Extensions.Documents
 {
@@ -89,31 +94,108 @@ namespace EAVFW.Extensions.Documents
 
             routes.MapGet("/api/files/{fileid}", async r =>
             {
-                var gzip = r.Request.Headers.TryGetValue("Accept-Encoding", out var compressionSupported) && compressionSupported.Contains("gzip", StringComparer.OrdinalIgnoreCase);
-
                 var context = r.RequestServices.GetRequiredService<DynamicContext>();
                 var files = context.Set<TDocument>();
                 var fileId = Guid.Parse(r.GetRouteValue("fileid") as string);
                 var file = await files.FindAsync(fileId);
                 byte[] data = file.Data;
 
-                if (file.Compressed??false && !gzip)
+                var canGzip = r.Request.Headers.TryGetValue("Accept-Encoding", out var compressionSupported) &&
+                    compressionSupported.Contains("gzip", StringComparer.OrdinalIgnoreCase);
+
+                if (file.Compressed ?? false && !canGzip)
                 {
                     using var ms = new MemoryStream(file.Data);
                     using var tinyStream = new GZipStream(ms, CompressionMode.Decompress);
                     using var msout = new MemoryStream();
                     await tinyStream.CopyToAsync(msout);
                     data = msout.ToArray();
-                    gzip = false;
+                    canGzip = false;
                 }
 
-                if (gzip)
+                if (canGzip && (file.Compressed ?? false))
                 {
                     r.Response.Headers.Add("content-encoding", "gzip");
                 }
+
+
+                var contentDisposition = new ContentDispositionHeaderValue("attachment");
+                contentDisposition.SetHttpFileName(file.Name);
+                r.Response.Headers["Content-Disposition"] = contentDisposition.ToString();
                 r.Response.Headers.Add("content-type", file.ContentType ?? "application/octet-stream");
+                r.Response.Headers.Add("X-Content-Type-Options", "nosniff");
+
+
                 await r.Response.BodyWriter.WriteAsync(data);
             });
+
+            routes.MapPost("/api/files", async context =>
+            {
+                var db = context.RequestServices.GetRequiredService<EAVDBContext<DynamicContext>>();
+                var form = context.Request.Form;
+                if (context.Request.HasFormContentType && form.Files.Any())
+                {
+                    var uploadedFiles = new List<EntityEntry<TDocument>>();
+                    foreach (var file in form.Files)
+                    {
+                        var compressed = false;
+                        if (form.TryGetValue("compressed", out var value) && !string.IsNullOrWhiteSpace(value))
+                        {
+                            compressed = bool.Parse(value);
+                        }
+
+                        using var ms = new MemoryStream();
+                        if (!compressed)
+                        {
+                            await using var gzip = new GZipStream(ms, CompressionMode.Compress);
+                            await file.CopyToAsync(gzip);
+                            await gzip.FlushAsync();
+                        }
+                        else
+                        {
+                            await file.CopyToAsync(ms);
+                        }
+
+                        uploadedFiles.Add(db.Context.Add(new TDocument
+                        {
+                            Name = file.FileName,
+                            Path = form["prefix"] + file.FileName,
+                            Data = ms.ToArray(),
+                            Compressed = true,
+                            Container = form["container"],
+                            ContentType = file.ContentType,
+                            Size = (int)ms.Length,
+                        }));
+
+                        await db.SaveChangesAsync(context.User);
+                    }
+                    await new DataEndpointResult(new
+                    {
+                        value = uploadedFiles.Select(c => new
+                        {
+                            id = c.Entity.Id,
+                            name = c.Entity.Name,
+                            path = c.Entity.Path,
+                            compressed = c.Entity.Compressed,
+                            size = c.Entity.Size,
+                            contenttype = c.Entity.ContentType
+                        })
+                    }).ExecuteAsync(context);
+
+                    //await context.Response.WriteAsJsonAsync(new
+                    //{
+                    //    value = uploadedFiles.Select(c => new
+                    //    {
+                    //        id = c.Entity.Id,
+                    //        name = c.Entity.Name,
+                    //        path = c.Entity.Path,
+                    //        compressed = c.Entity.Compressed,
+                    //        size = c.Entity.Size,
+                    //        contenttype = c.Entity.ContentType
+                    //    })
+                    //});
+                }
+            }).WithMetadata(new AuthorizeAttribute("EAVAuthorizationPolicy"));
 
             return routes;
         }
