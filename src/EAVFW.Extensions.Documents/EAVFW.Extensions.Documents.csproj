@@ -1,7 +1,7 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
 	<PropertyGroup>
-		<TargetFrameworks>netcoreapp3.1;net6.0</TargetFrameworks>
+        <TargetFrameworks>netcoreapp3.1;net6.0;net8.0</TargetFrameworks>
 
 		<Title>EAVFW.Extensions.Documents</Title>
 		<Authors>Poul Kjeldager</Authors>
@@ -10,9 +10,7 @@
 		<RepositoryUrl>https://github.com/EAVFW/EAVFW.Extensions.Documents</RepositoryUrl>
 		<RemoteEAVFramework>true</RemoteEAVFramework>
 	</PropertyGroup>
-	<ItemGroup>
-		<FrameworkReference Include="Microsoft.AspNetCore.App" />
-	</ItemGroup>
+
 	<ItemGroup>
 		<None Include="..\..\README.md" Link="README.md" Pack="true" PackagePath="\" />
 		<None Include="manifest.extensions.json" Pack="true" PackagePath="eavfw/manifest/" />
