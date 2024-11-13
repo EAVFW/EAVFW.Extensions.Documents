@@ -3,7 +3,6 @@ Document Extensions for EAVFW Application Building
 
 
 ###
-
 ```
 
 services.useEAVFramework().AddDocumentPlugins<Context,Document>();
